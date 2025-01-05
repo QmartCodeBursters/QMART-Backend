@@ -1,4 +1,3 @@
-
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
@@ -6,8 +5,6 @@ const { sendOtpEmail, sendEmail } = require("../services/emailService");
 const { generateAccountNumber } = require("../utils/accountNumberGenerator");
 const {generateOtp} = require("../utils/otpUtils");
 const uploadImageCloudinary = require("../utils/cloudinary");
-
-
 
 const AuthController = {};
 
@@ -23,7 +20,6 @@ const generateUniqueAccountNumber = async () => {
 
   return accountNumber.toString();
 };
-
 
 AuthController.signUp = async (req, res) => {
   try {
@@ -69,36 +65,80 @@ AuthController.signUp = async (req, res) => {
     res.status(500).json({ message: 'Signup failed.', error: error.message });
   }
 };
-
-
+ 
 AuthController.verifyOTP = async (req, res) => {
   try {
-    const { email, otp } = req.body;
+    console.log("Request Body:", req.body); // Debugging log
+
+    const { otp, email } = req.body;
+    if (!otp || !email) {
+      return res.status(400).json({
+        message: "OTP and email are required",
+        error: true,
+        success: false,
+      });
+    }
+
+    // Log to check if the email and OTP are correct
+    console.log("OTP received:", otp);
+    console.log("Email received:", email);
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
+      return res.status(404).json({
+        message: "User not found",
+        error: true,
+        success: false,
+      });
     }
 
     if (user.isVerified) {
-      return res.status(400).json({ message: 'User already verified.' });
+      return res.status(400).json({ message: "User already verified." });
     }
 
+    // Check if OTP is valid and not expired
     if (user.resetOtp !== otp || new Date() > new Date(user.otpExpiry)) {
-      return res.status(400).json({ message: 'Invalid or expired OTP.' });
+      return res.status(400).json({ message: "Invalid or expired OTP." });
     }
 
+    // Update user status
     user.isVerified = true;
     user.resetOtp = null;
     user.otpExpiry = null;
     await user.save();
 
-    res.status(200).json({ message: 'Email verified successfully. You can now sign in.' });
+    res.status(200).json({ message: "Email verified successfully." });
   } catch (error) {
-    res.status(500).json({ message: 'OTP verification failed.', error: error.message });
+    console.error("OTP verification failed:", error.message);
+    res.status(500).json({ message: "OTP verification failed.", error: error.message });
   }
 };
 
+AuthController.fetchUser = async (req, res) => {
+  try {
+    
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    
+    res.status(200).json({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      address: user.address,
+      password: user.hashedPassword,
+      phoneNumber: user.phoneNumber,
+      role: user.role,
+      // Add other fields you want to return
+    });
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ message: 'Error fetching user details', error: error.message });
+  }
+};
 
 AuthController.signIn = async (req, res) => {
   try {
@@ -108,31 +148,37 @@ AuthController.signIn = async (req, res) => {
       return res.status(400).json({ message: 'All fields are required.' });
     }
 
+    // Find the user by email
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
     }
 
+    // Compare password
     const isPasswordMatch = await bcrypt.compare(password, user.password);
     if (!isPasswordMatch) {
       return res.status(401).json({ message: 'Incorrect password.' });
     }
 
+    // Generate JWT token
     const token = jwt.sign(
       { _id: user._id, accountNumber: user.accountNumber },
       process.env.JWT_SECRET,
       { expiresIn: '2d' }
     );
 
-    res.cookie('jwt', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 2 * 24 * 60 * 60 * 1000, // 2 days
-      sameSite: 'strict',
+    // Set token in the cookie
+    Cookies.set('jwt', token, {
+      httpOnly: true, // Important to prevent client-side access
+      secure: process.env.NODE_ENV === 'production', // Only secure cookies in production
+      sameSite: 'Strict',
+      expires: 2, // 2 days expiration
     });
-
+    
+    // Removing sensitive information before sending the response
     const { password: _, resetOtp: __, otpExpiry: ___, ...userData } = user._doc;
 
+    // Return successful response with token and user data (without sensitive information)
     res.status(200).json({
       message: 'Sign-in successful.',
       data: { token, user: userData },
@@ -150,7 +196,7 @@ AuthController.sendOTPToResetPassword = async (req, res) => {
       return res.status(400).json({ message: 'Email is required.' });
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }); 
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
     }
@@ -169,7 +215,6 @@ AuthController.sendOTPToResetPassword = async (req, res) => {
     res.status(500).json({ message: 'Failed to send OTP.', error: error.message });
   }
 };
-
 
 AuthController.verifyResetPasswordOTP = async (req, res) => {
   try {
@@ -283,7 +328,6 @@ AuthController.uploadAvatarController = async (req, res) => {
       });
   }
 };
-
 
 AuthController.signOut = async (req, res) => {
   try {

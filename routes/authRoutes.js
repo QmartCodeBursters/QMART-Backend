@@ -1,19 +1,19 @@
 const express = require('express');
-const { signUp, signOut, verifyOTP,  sendOTPToResetPassword, verifyResetPasswordOTP, resetPassword } = require('../controllers/authController');
-const validateSignup = require('../middlewares/validateSignup');
+const { sendOTPToResetPassword, verifyResetPasswordOTP, resetPassword } = require('../controllers/authController');
 const AuthController = require("../controllers/authController");
 const upload = require('../middlewares/multer');
 const authenticateUser = require('../middlewares/authMiddleware');
 const { getWalletDetails } = require('../controllers/walletController');
-
-
+const { otpVerification, resendOtp } = require('../utils/otpUtils');
 
 const router = express.Router();
 
-router.post('/signup', validateSignup, signUp);
-router.post('/verify-otp', verifyOTP);
-router.post('/signin', AuthController.signIn);
+router.post('/signup', AuthController.signUp);
+router.post('/verify-otp-code', AuthController.verifyOTP);
 router.post('/signout', AuthController.signOut);
+router.get('/me', authenticateUser,  AuthController.fetchUser);
+router.post('/verify-otp', otpVerification);
+router.post('/send-otp', resendOtp);
 
 
 router.post('/request-password-reset', sendOTPToResetPassword);
