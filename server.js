@@ -35,7 +35,7 @@ app.use(cors({
 app.use('/api/v1/user', authRoutes);
 app.use('/api/v1/business',businesRouter);
 app.use('/api/v1/transaction', transactionRoute)
-app.use('/api/v1/wallet', walletRoutes);
+app.use('/api/v1/wallet', walletRoutes); 
 // app.use('/api/v1/payment', customerPay);
 
 

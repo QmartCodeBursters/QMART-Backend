@@ -132,7 +132,7 @@ AuthController.fetchUser = async (req, res) => {
       password: user.hashedPassword,
       phoneNumber: user.phoneNumber,
       role: user.role,
-      // Add other fields you want to return
+      
     });
   } catch (error) {
     console.error('Error fetching user:', error);
