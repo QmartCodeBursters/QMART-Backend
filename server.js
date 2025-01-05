@@ -1,18 +1,20 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db'); 
+const cors = require('cors');
+
 const authRoutes = require('./routes/authRoutes');
 const businesRouter = require('./routes/businessRoute');
 const transactionRoute = require("./routes/transactionRoutes")
 
 const cookieParser = require('cookie-parser');
 const walletRoutes = require('./routes/walletRoutes');
-const { customerToMerchantPayment } = require('./controllers/paymentContoller');
 
 
 
 
-dotenv.configDotenv()
+
+dotenv.configDotenv();
 
 
 const app = express();
@@ -22,12 +24,19 @@ connectDB();
 app.use(express.json());
 app.use(cookieParser());
 
+app.use(cors({
+  origin: process.env.FRONTEND_URL,
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization'],	
+  credentials: true
+})); 
+
 
 app.use('/api/v1/user', authRoutes);
 app.use('/api/v1/business',businesRouter);
 app.use('/api/v1/transaction', transactionRoute)
 app.use('/api/v1/wallet', walletRoutes);
-app.use('/api/v1/payment', customerToMerchantPayment);
+// app.use('/api/v1/payment', customerPay);
 
 
 
