@@ -26,7 +26,7 @@ exports.customerToMerchantPayment = async (req, res) => {
                 error: true,
                 success: false
             });
-        }
+        } 
 
         // Generate the QR code (add merchant details, business name, amount, and pin)
         const qrCodeData = await generateQRCode(

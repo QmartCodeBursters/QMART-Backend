@@ -160,6 +160,8 @@ AuthController.fetchUser = async (req, res) => {
 };
 
 AuthController.signIn = async (req, res) => {
+  console.log("received")
+  
   try {
     const { email, password } = req.body;
 
