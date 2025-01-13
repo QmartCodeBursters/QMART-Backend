@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const dotenv = require('dotenv');
 
-
+ 
 dotenv.config();
 
 const connectDB = async () => {
@@ -19,7 +19,7 @@ const connectDB = async () => {
        
         console.error(`Database connection error: ${error.message}`);
         process.exit(1); 
-    }
+    } 
 };
-
+ 
 module.exports = connectDB;
