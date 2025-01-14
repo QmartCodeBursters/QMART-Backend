@@ -10,7 +10,7 @@ exports.getTransactionHistory = async (userId, role) => {
 
   return Transaction.find(filter).sort({ createdAt: -1 });
 };
-
+ 
 exports.deposit = async (walletId, amount, userId) => {
   const wallet = await Wallet.findById(walletId);
   if (!wallet) throw new Error('Wallet not found');
