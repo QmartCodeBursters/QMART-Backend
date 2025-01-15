@@ -1,17 +1,15 @@
 const QRCode = require('qrcode');
 
-const generateQRCode = async (merchantAccountNumber, amount, cashAmount, pin, businessName) => {
+const generateQRCode = async (merchantAccountNumber, amount, businessName) => {
   const data = {
-    merchantAccountNumber,
-    amount,
-    cashAmount,
-    pin,
-    businessName,
+    merchantAccountNumber, 
+    amount, 
+    businessName
   };
 
   try {
     const qrCodeData = await QRCode.toDataURL(JSON.stringify(data)); // Generates a data URL for the QR code image
-    return qrCodeData;
+    return qrCodeData; // QR Code in base64
   } catch (error) {
     console.error('Error generating QR Code:', error);
     throw new Error('Could not generate QR Code');
@@ -19,3 +17,4 @@ const generateQRCode = async (merchantAccountNumber, amount, cashAmount, pin, bu
 };
 
 module.exports = { generateQRCode };
+ 
