@@ -1,6 +1,6 @@
 const walletSettings = require('../models/walletSettings');
 const User = require('../models/userModel');
-const Wallet = require('../models/walletModel');
+// const Wallet = require('../models/walletModel');
 const QRCode = require('qrcode');
 
 
@@ -69,9 +69,6 @@ exports.sendMoneyToMerchant = async (req, res) => {
     });
   }
 };
-
-
-
 
 exports.merchantReceivePayment = async (req, res) => {
   const { amount } = req.body;

@@ -11,8 +11,9 @@ const businessSchema = new mongoose.Schema({
     businessDescription: {
         type: String, 
     },
+ 
 });
 
 const businessModel = mongoose.model("Business", businessSchema);
 
-module.exports = businessModel
+module.exports = businessModel;

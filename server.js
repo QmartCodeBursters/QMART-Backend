@@ -5,7 +5,9 @@ const cors = require('cors');
 
 const authRoutes = require('./routes/authRoutes');
 const businesRouter = require('./routes/businessRoute');
-const transactionRoute = require("./routes/transactionRoutes")
+const transactionRoute = require("./routes/transactionRoutes");
+const paymentRoute = require("./routes/paymentRoute");
+
 
 const cookieParser = require('cookie-parser');
 const walletRoutes = require('./routes/walletRoutes');
@@ -36,7 +38,7 @@ app.use('/api/v1/user', authRoutes);
 app.use('/api/v1/business',businesRouter);
 app.use('/api/v1/transaction', transactionRoute)
 app.use('/api/v1/wallet', walletRoutes); 
-// app.use('/api/v1/payment', customerPay);
+app.use('/api/v1/payment', paymentRoute);
 
 
 

@@ -46,21 +46,12 @@ const registerBusiness = async (req, res) => {
             });
         }
 
-        // Check if the business name is already in use
-        const existingBusiness = await businessModel.findOne({ businessName });
-        if (existingBusiness) {
-            return res.status(400).json({
-                message: "Business name is already in use.",
-                error: true,
-                success: false
-            });
-        }
-
-        // Create new business
+        // Create new business with the same accountNumber as the user
         const newBusiness = new businessModel({
             businessName,
             businessRegNumber,
             businessDescription,
+            accountNumber: user.accountNumber,  // Use the user's account number for the business
             user: user._id  // Link business to user
         });
 
@@ -91,28 +82,41 @@ const registerBusiness = async (req, res) => {
 };
 
 
-// const fetchUserData = async (req, res) => {
-//     try {
-//       // Fetch the user and populate the 'business' field
-//       const user = await userModel.findById(req.user.id).populate('business');
-//       console.log(user)
-//       if (!user) {
-//         return res.status(404).json({ message: "User not found" });
-//       }
-  
-//       res.status(200).json({
-//         role: user.role,
-//         businessName: user.business ? user.business.businessName : null,
-//         accountBalance: user.accountBalance,
-//       });
-//     } catch (error) {
-//       console.error(error);
-//       res.status(500).json({ message: "Server error" });
-//     }
-//   };
+
+const fetchMerchantData = async (req, res) => {
+    try {
+        // Ensure req.user exists
+        if (!req.user || !req.user.id) {
+            return res.status(400).json({ message: "User is not authenticated" });
+        }
+
+        // Fetch the user and populate the 'business' field
+        const user = await userModel.findById(req.user.id).populate('business');
+        
+        // Check if user exists
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Ensure business data exists
+        const business = user.business ? user.business : null;
+
+        // Return the merchant data
+        res.status(200).json({
+            role: user.role,
+            businessName: business ? business.businessName : "No business name", // Provide a fallback value
+            accountNumber: user.accountNumber || "No account number", // Provide a fallback value
+            accountBalance: user.accountBalance,
+            businessDescription: business ? business.businessDescription : "No business description", // Provide fallback
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error" });
+    }
+};
 
 // Export the function
 module.exports = {
     registerBusiness,
-    // fetchUserData
+    fetchMerchantData
  };
