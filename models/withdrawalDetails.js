@@ -28,7 +28,7 @@ const withdrawalDeailsSchema = new mongoose.Schema({
     }
 },{
     timestamps: true
-})
+});
 
 module.exports = mongoose.model('withdrawalDetails', withdrawalDeailsSchema)
 
