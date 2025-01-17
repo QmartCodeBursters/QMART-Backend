@@ -5,6 +5,7 @@ const upload = require('../middlewares/multer');
 const authenticateUser = require('../middlewares/authMiddleware');
 const { getWalletDetails } = require('../controllers/walletController');
 const { otpVerification, resendOtp } = require('../utils/otpUtils');
+const { updateNotificationSettings } = require('../controllers/notificationsController');
 
 const router = express.Router();
 
@@ -20,6 +21,7 @@ router.post('/verifyResetPasswordOTP', verifyResetPasswordOTP);
 router.patch('/reset-password', resetPassword);
 router.put('/upload-avatar', authenticateUser, upload.single('avatar'), AuthController.uploadAvatarController);
 router.get('/wallet-details', authenticateUser, getWalletDetails);
+router.put("/:userId/:role", updateNotificationSettings);
  
 
 module.exports = router;

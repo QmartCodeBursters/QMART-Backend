@@ -7,6 +7,7 @@ const authRoutes = require('./routes/authRoutes');
 const businesRouter = require('./routes/businessRoute');
 const transactionRoute = require("./routes/transactionRoutes");
 const paymentRoute = require("./routes/paymentRoute");
+const notificationRoutes = require("./routes/notificationRoutes");
 
 
 const cookieParser = require('cookie-parser');
@@ -28,7 +29,7 @@ app.use(cookieParser());
 
 app.use(cors({
   origin: process.env.FRONTEND_URL,
-  methods: ['GET', 'POST'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],	
   credentials: true
 })); 
@@ -39,6 +40,7 @@ app.use('/api/v1/business',businesRouter);
 app.use('/api/v1/transaction', transactionRoute)
 app.use('/api/v1/wallet', walletRoutes); 
 app.use('/api/v1/payment', paymentRoute);
+app.use("/api/v1/notifications", notificationRoutes);
 
 
 

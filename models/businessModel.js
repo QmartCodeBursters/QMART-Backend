@@ -7,12 +7,12 @@ const businessSchema = new mongoose.Schema({
     },
     businessRegNumber: {
         type: String, 
-    },
+    }, 
     businessDescription: {
-        type: String, 
+        type: String,  
     },
  
-});
+}); 
 
 const businessModel = mongoose.model("Business", businessSchema);
 
