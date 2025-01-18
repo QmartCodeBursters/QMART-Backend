@@ -1,7 +1,6 @@
-const multer = require ('multer');
+const multer = require('multer');
 
-const storage = multer.memoryStorage();
+const storage = multer.memoryStorage();  // or use diskStorage if preferred
+const upload = multer({ storage: storage });
 
-const upload = multer({ storage : storage });
-
-module.exports = upload 
+module.exports = upload;  // Export the 'upload' middleware
