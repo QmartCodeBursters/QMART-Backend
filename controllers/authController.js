@@ -24,7 +24,7 @@ const generateUniqueAccountNumber = async () => {
 
 AuthController.signUp = async (req, res) => {
   try {
-    const { firstName, lastName, email, password, phoneNumber, role } =
+    const { firstName, lastName, email, password, phoneNumber, address, role } =
       req.body;
 
     if (
@@ -32,6 +32,7 @@ AuthController.signUp = async (req, res) => {
       !lastName ||
       !email ||
       !password ||
+      !address ||
       !phoneNumber ||
       !role
     ) {
@@ -51,6 +52,7 @@ AuthController.signUp = async (req, res) => {
       lastName,
       email,
       phoneNumber,
+      address,
       password: hashedPassword,
       accountNumber,
       role,

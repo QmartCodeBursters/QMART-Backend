@@ -99,7 +99,7 @@ const authenticateUser = async (req, res, next) => {
     return res.status(401).json({
       message: 'Authentication token missing',
       error: true,
-      success: false,
+      success: false, 
     });
   }
 

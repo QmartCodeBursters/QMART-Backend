@@ -19,7 +19,8 @@ router.post('/send-otp', resendOtp);
 router.post('/request-password-reset', sendOTPToResetPassword);
 router.post('/verifyResetPasswordOTP', verifyResetPasswordOTP);
 router.patch('/reset-password', resetPassword);
-router.put('/upload-avatar', authenticateUser, upload.single('avatar'), AuthController.uploadAvatarController);
+router.put('/upload-avatar', authenticateUser, upload.single('profileImage'), AuthController.uploadAvatarController);
+
 router.get('/wallet-details', authenticateUser, getWalletDetails);
 router.put("/:userId/:role", updateNotificationSettings);
  
