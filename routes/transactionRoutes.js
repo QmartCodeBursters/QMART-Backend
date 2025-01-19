@@ -8,7 +8,7 @@ const router = express.Router();
 router.post("/customertransactionHistory", authMiddleware, transactionController.handleTransaction);
 
 
-router.get("/merchanttransactionHistory", authMiddleware, transactionController.getTransactionHistory);
+router.get("/transaction-history", authMiddleware, transactionController.getTransactionHistory);
 
 module.exports = router;
 

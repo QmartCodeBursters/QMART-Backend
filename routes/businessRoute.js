@@ -8,6 +8,6 @@ const businesRouter = express.Router();
 
 businesRouter.post('/business-registration', authenticateUser, businessController.registerBusiness);
 businesRouter.post('/generate-qr-code', authenticateUser, generateQRCode);
-businesRouter.get('/merchant-details', businessController.fetchMerchantData)
+businesRouter.get('/merchant-details', authenticateUser, businessController.fetchMerchantData)
 
 module.exports =  businesRouter 

@@ -1,33 +1,47 @@
 const walletSettings = require('../models/walletSettings');
 const User = require('../models/userModel');
-// const Wallet = require('../models/walletModel');
-const QRCode = require('qrcode');
-
+const bcrypt = require('bcrypt');
+const Transaction = require('../models/transactionModel');
+const { v4: uuidv4 } = require('uuid'); // Import uuid for generating transaction IDs
 
 exports.sendMoneyToMerchant = async (req, res) => {
+  console.log("sendMoneyToMerchant route hit");
+
   const { walletNumber, amount, pin } = req.body;
 
   try {
-    // Fetch the user's wallet settings
-    const wallet = await walletSettings.findOne({ userId: req.user._id });
+    const transactionId = uuidv4(); // Generate a unique transaction ID
+    console.log("Generated Transaction ID:", transactionId);
+
+    let wallet = await walletSettings.findOne({ userId: req.user._id });
+
     if (!wallet) {
-      return res.status(400).json({
-        message: 'Wallet settings not found.',
-        error: true,
-        success: false,
+      const hashedPin = await bcrypt.hash('1234', 10);
+      wallet = new walletSettings({
+        userId: req.user._id,
+        pin: hashedPin,
       });
+
+      await wallet.save();
+    } else {
+      if (!wallet.pin || wallet.pin.length !== 60) {
+        const hashedPin = await bcrypt.hash(wallet.pin, 10);
+        wallet.pin = hashedPin;
+        await wallet.save();
+      }
     }
 
-    // Verify the PIN
-    if (wallet.pin !== pin) {
+    const isPinCorrect = await bcrypt.compare(pin, wallet.pin);
+
+    if (!isPinCorrect) {
       return res.status(400).json({
         message: 'Incorrect PIN.',
         error: true,
         success: false,
+        transactionId,
       });
     }
 
-    // Fetch the customer and merchant users
     const customer = await User.findById(req.user._id);
     const merchant = await User.findOne({ accountNumber: walletNumber });
 
@@ -36,29 +50,38 @@ exports.sendMoneyToMerchant = async (req, res) => {
         message: 'Merchant not found.',
         error: true,
         success: false,
+        transactionId,
       });
     }
 
-    // Check if the customer has enough balance
-    if (customer.accountBalance < amount) {
+    // Calculate the transaction fee and the total amount to deduct
+    const transactionFee = amount * 0.05;
+    const totalDeduction = amount + transactionFee;
+
+    if (customer.accountBalance < totalDeduction) {
       return res.status(400).json({
-        message: 'Insufficient balance.',
+        message: 'Insufficient balance to cover the amount and transaction fee.',
         error: true,
         success: false,
+        transactionId,
       });
     }
 
-    // Deduct the amount from the customer's balance and add it to the merchant's balance
-    customer.accountBalance -= amount;
-    merchant.accountBalance += amount;
+    // Deduct the total amount (amount + transaction fee) from the customer's balance
+    customer.accountBalance -= totalDeduction;
 
-    // Save the updated balances
+    // Add the sent amount and the transaction fee to the merchant's balance
+    merchant.accountBalance += (amount + transactionFee);
+
+    // Save changes to both customer and merchant
     await customer.save();
     await merchant.save();
 
     res.status(200).json({
       message: 'Payment successful.',
       success: true,
+      transactionId, // Include transactionId in the response
+      transactionFee, // Include the transaction fee in the response
     });
   } catch (error) {
     console.error('Error processing payment:', error);
@@ -66,50 +89,102 @@ exports.sendMoneyToMerchant = async (req, res) => {
       message: 'Server error.',
       error: error.message,
       success: false,
+      transactionId: uuidv4(), // Include a new transactionId for server error logging
     });
   }
 };
 
+
+
+// Function to handle payment reception by the merchant
 exports.merchantReceivePayment = async (req, res) => {
   const { amount } = req.body;
 
   try {
-    // Validate the input amount
+    const paymentId = uuidv4(); // Generate a unique payment ID
+    console.log("Generated Payment ID:", paymentId);
+
     if (!amount || amount <= 0) {
       return res.status(400).json({
         message: 'Invalid amount. Please enter a valid amount.',
         error: true,
         success: false,
+        paymentId,
       });
     }
 
-    // Fetch the merchant's details
     const user = await User.findById(req.user._id);
     if (!user || user.role !== 'merchant') {
       return res.status(403).json({
-        message: 'Only merchants can generate QR codes.',
+        message: 'User is not a merchant.',
         error: true,
+        success: false,
+        paymentId,
+      });
+    }
+
+    user.accountBalance += amount;
+
+    await user.save();
+
+    res.status(200).json({
+      message: 'Payment received successfully.',
+      success: true,
+      paymentId, // Include paymentId in the response
+    });
+  } catch (error) {
+    console.error('Error processing payment reception:', error);
+    res.status(500).json({
+      message: 'Server error.',
+      error: error.message,
+      success: false,
+      paymentId: uuidv4(), // Include a new paymentId for server error logging
+    });
+  }
+};
+
+exports.depositMoney = async (req, res) => {
+  const { amount } = req.body;
+
+  try {
+    if (!amount || amount <= 0) {
+      return res.status(400).json({
+        message: 'Invalid amount. Please enter a valid deposit amount.',
         success: false,
       });
     }
 
-    // Generate the QR code data
-    const qrData = {
-      businessName: user.businessName,
-      walletNumber: user.accountNumber,
-      amount: amount,
-    };
+    // Fetch the user's account
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({
+        message: 'User not found.',
+        success: false,
+      });
+    }
 
-    // Generate the QR code
-    const qrCodeUrl = await QRCode.toDataURL(JSON.stringify(qrData));
+    // Update the user's account balance
+    user.accountBalance += amount;
+    await user.save();
+
+    // Create a transaction record
+    const transaction = new Transaction({
+      transactionId: uuidv4(),
+      userId: req.user._id,
+      amount,
+      type: 'credit',
+      status: 'completed',
+    });
+
+    await transaction.save();
 
     res.status(200).json({
-      message: 'QR Code generated successfully.',
-      qrCodeUrl: qrCodeUrl,
+      message: 'Deposit successful.',
       success: true,
+      transaction,
     });
   } catch (error) {
-    console.error('Error generating QR code:', error);
+    console.error('Error processing deposit:', error);
     res.status(500).json({
       message: 'Server error.',
       error: error.message,
@@ -117,4 +192,64 @@ exports.merchantReceivePayment = async (req, res) => {
     });
   }
 };
+
+exports.withdrawMoney = async (req, res) => {
+  const { amount } = req.body;
+
+  try {
+    if (!amount || amount <= 0) {
+      return res.status(400).json({
+        message: 'Invalid amount. Please enter a valid withdrawal amount.',
+        success: false,
+      });
+    }
+
+    // Fetch the user's account
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({
+        message: 'User not found.',
+        success: false,
+      });
+    }
+
+    // Check if the user has sufficient balance
+    if (user.accountBalance < amount) {
+      return res.status(400).json({
+        message: 'Insufficient balance.',
+        success: false,
+      });
+    }
+
+    // Update the user's account balance
+    user.accountBalance -= amount;
+    await user.save();
+
+    // Create a transaction record
+    const transaction = new Transaction({
+      transactionId: uuidv4(),
+      userId: req.user._id,
+      amount,
+      type: 'debit',
+      status: 'completed',
+    });
+
+    await transaction.save();
+
+    res.status(200).json({
+      message: 'Withdrawal successful.',
+      success: true,
+      transaction,
+    });
+  } catch (error) {
+    console.error('Error processing withdrawal:', error);
+    res.status(500).json({
+      message: 'Server error.',
+      error: error.message,
+      success: false,
+    });
+  }
+};
+
+
 
