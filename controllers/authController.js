@@ -146,31 +146,39 @@ AuthController.verifyOTP = async (req, res) => {
 
 AuthController.fetchUser = async (req, res) => {
   try {
+    
     const user = await User.findById(req.user._id).populate("business");
-    console.log(user);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Check if the user has a business and adjust accordingly
-    const businessName = user.business ? user.business.businessName : null;
+    
+    const businessDetails = user.business
+      ? {
+          businessName: user.business.businessName || "",
+          businessRegNumber: user.business.businessRegNumber || "",
+          businessDescription: user.business.businessDescription || "",
+        }
+      : {};
 
     res.status(200).json({
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
-      address: user.address,
-      password: user.hashedPassword,
       phoneNumber: user.phoneNumber,
+      address: user.address,
+      accountNumber: user.accountNumber, 
+      accountBalance: user.accountBalance || 0, 
       role: user.role,
-      businessName: businessName,  // Only include businessName if it exists
+      ...businessDetails, 
     });
   } catch (error) {
     console.error("Error fetching user:", error);
     res.status(500).json({ message: "Error fetching user details", error: error.message });
   }
 };
+
 
 
 AuthController.signIn = async (req, res) => {

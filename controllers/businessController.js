@@ -86,12 +86,12 @@ const registerBusiness = async (req, res) => {
 const fetchMerchantData = async (req, res) => {
     try {
         // Ensure req.user exists
-        if (!req.user || !req.user.id) {
+        if (!req.user || !req.user._id) {
             return res.status(400).json({ message: "User is not authenticated" });
         }
 
         // Fetch the user and populate the 'business' field
-        const user = await userModel.findById(req.user.id).populate('business');
+        const user = await userModel.findById(req.user._id).populate('business');
         
         // Check if user exists
         if (!user) {

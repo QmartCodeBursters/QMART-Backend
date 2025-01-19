@@ -9,7 +9,7 @@ const walletSettingsSchema = new mongoose.Schema({
     pin: {
         type: String,
         required: true,
-        maxlength: 4,
+        maxlength: 255,
         minlength: 4
     }
 });

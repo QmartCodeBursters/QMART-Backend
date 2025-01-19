@@ -1,87 +1,47 @@
-const mongoose = require("mongoose");
-const crypto = require("crypto");
+const mongoose = require('mongoose');
 
-const transactionSchema = new mongoose.Schema(
-  {
-    transactionId: {
-      type: String,
-      required: true,
-      unique: true, 
-    },
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true, 
-    },
-    walletId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Wallet",
-      required: true, 
-        },
-    sender: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      default: null, 
-    },
-    recipient: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      default: null, 
-        },
-    type: {
-      type: String,
-      enum: ["deposit", "withdrawal"], 
-      required: true,
-    },
-    role: {
-      type: String,
-      enum: ["customer", "merchant"],
-      required: true,
-    },
-    amount: {
-      type: Number,
-      required: true, 
-      min: [0, "Amount must be positive"], 
-    },
-    amountType: {
-      type: String,
-      enum: ["debit", "credit"],
-    },
-    status: {
-      type: String,
-      enum: ["pending", "completed", "failed"], 
-      default: "pending", 
-    },
-    notificationSent: {
-      type: Boolean,
-      default: false, 
-    },
-    referenceId: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    transactionHistory: {
-      type: [
-        {
-          type: String,
-          enum: ["deposit", "withdrawal"], 
-        },
-      ],
-      default: [], 
-    },
+const transactionSchema = new mongoose.Schema({
+  transactionId: { 
+    type: String, 
+    unique: true,
+    required: true 
   },
-  {
-    timestamps: true, 
-  }
-);
-
-// Pre-save hook to generate a referenceId if not provided
-transactionSchema.pre("save", function (next) {
-  if (!this.referenceId) {
-    this.referenceId = crypto.randomBytes(8).toString("hex").toUpperCase();
-  }
-  next();
+  senderId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User', 
+    required: true 
+  },
+  receiverId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User', 
+    required: true 
+  },
+  amount: { 
+    type: Number, 
+    required: true 
+  },
+  type: { 
+    type: String, 
+    enum: ['debit', 'credit'], 
+    required: true 
+  },
+  fee: { 
+    type: Number, 
+    required: true 
+  },
+  totalDeduction: { 
+    type: Number, 
+    required: true 
+  },
+  status: {  
+    type: String, 
+    enum: ['completed', 'pending', 'failed'], 
+    default: 'completed' 
+  },
+  createdAt: { 
+    type: Date, 
+    default: Date.now 
+  },
 });
 
-module.exports = mongoose.model("Transaction", transactionSchema);
+module.exports = mongoose.model('Transaction', transactionSchema);
