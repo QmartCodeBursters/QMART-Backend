@@ -32,11 +32,11 @@ connectDB();
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({
-  origin: "*",
+app.use(cors({ 
+  origin: "https://qmartcode.netlify.app",
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],	
-  // credentials: true,
+  credentials: true,
 }));
 
 // Socket.IO setup
