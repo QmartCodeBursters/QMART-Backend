@@ -1,5 +1,6 @@
 const User = require('../models/userModel');
 const walletSettings = require('../models/walletSettings');
+const bcrypt = require("bcryptjs");
 
 //Get wallet details
 exports.getWalletDetails = async (req, res) => {
