@@ -1,12 +1,16 @@
-const express = require	('express');
+const express = require('express');
 const authenticateUser = require('../middlewares/authMiddleware');
-const { sendMoneyToMerchant, merchantReceivePayment } = require('../controllers/paymentContoller');
+const paymentController = require('../controllers/paymentContoller');
 
-const router = express.Router();	
+const router = express.Router();
 
-
-router.post('/customer-send-payment', authenticateUser, sendMoneyToMerchant );
-router.post('/merchant-receive-payment', authenticateUser, merchantReceivePayment );
-
-
-module.exports = router
+// Function to initialize routes with Socket.IO
+module.exports = (io) => {
+  router.post('/customer-send-payment', authenticateUser, (req, res) =>
+    paymentController.sendMoneyToMerchant(req, res, io)
+  );
+  router.post('/merchant-receive-payment', authenticateUser, (req, res) =>
+    paymentController.merchantReceivePayment(req, res, io)
+  );
+  return router;
+};

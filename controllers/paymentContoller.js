@@ -1,10 +1,9 @@
-const walletSettings = require('../models/walletSettings');
-const User = require('../models/userModel');
+const uuidv4 = require('uuid').v4;
 const bcrypt = require('bcrypt');
-const Transaction = require('../models/transactionModel');
-const { v4: uuidv4 } = require('uuid'); // Import uuid for generating transaction IDs
+const User = require('../models/userModel'); 
+const walletSettings = require('../models/walletSettings'); 
 
-exports.sendMoneyToMerchant = async (req, res) => {
+exports.sendMoneyToMerchant = async (req, res, io) => {
   console.log("sendMoneyToMerchant route hit");
 
   const { walletNumber, amount, pin } = req.body;
@@ -21,7 +20,6 @@ exports.sendMoneyToMerchant = async (req, res) => {
         userId: req.user._id,
         pin: hashedPin,
       });
-
       await wallet.save();
     } else {
       if (!wallet.pin || wallet.pin.length !== 60) {
@@ -32,7 +30,6 @@ exports.sendMoneyToMerchant = async (req, res) => {
     }
 
     const isPinCorrect = await bcrypt.compare(pin, wallet.pin);
-
     if (!isPinCorrect) {
       return res.status(400).json({
         message: 'Incorrect PIN.',
@@ -54,7 +51,6 @@ exports.sendMoneyToMerchant = async (req, res) => {
       });
     }
 
-    // Calculate the transaction fee and the total amount to deduct
     const transactionFee = amount * 0.05;
     const totalDeduction = amount + transactionFee;
 
@@ -67,7 +63,7 @@ exports.sendMoneyToMerchant = async (req, res) => {
       });
     }
 
-    // Deduct the total amount (amount + transaction fee) from the customer's balance
+    // Deduct the total amount from the customer's balance
     customer.accountBalance -= totalDeduction;
 
     // Add the sent amount and the transaction fee to the merchant's balance
@@ -77,11 +73,32 @@ exports.sendMoneyToMerchant = async (req, res) => {
     await customer.save();
     await merchant.save();
 
+    // Emit notifications to customer and merchant
+    io.emit('transaction', {
+      message: `Transaction successful: You have been debited with ${amount} NGN.`,
+      type: 'debit',
+      name: customer.name,
+      walletNumber: customer.walletNumber,
+      amount,
+      balance: customer.accountBalance,
+      transactionId,
+    });
+
+    io.emit('transaction', {
+      message: `Transaction successful: You have been credited with ${amount} NGN.`,
+      type: 'credit',
+      name: merchant.name,
+      walletNumber: merchant.walletNumber,
+      amount,
+      balance: merchant.accountBalance,
+      transactionId,
+    });
+
     res.status(200).json({
       message: 'Payment successful.',
       success: true,
-      transactionId, // Include transactionId in the response
-      transactionFee, // Include the transaction fee in the response
+      transactionId,
+      transactionFee,
     });
   } catch (error) {
     console.error('Error processing payment:', error);
@@ -89,12 +106,10 @@ exports.sendMoneyToMerchant = async (req, res) => {
       message: 'Server error.',
       error: error.message,
       success: false,
-      transactionId: uuidv4(), // Include a new transactionId for server error logging
+      transactionId: uuidv4(),
     });
   }
 };
-
-
 
 // Function to handle payment reception by the merchant
 exports.merchantReceivePayment = async (req, res) => {
@@ -142,7 +157,6 @@ exports.merchantReceivePayment = async (req, res) => {
     });
   }
 };
-
 exports.depositMoney = async (req, res) => {
   const { amount } = req.body;
 
@@ -192,7 +206,6 @@ exports.depositMoney = async (req, res) => {
     });
   }
 };
-
 exports.withdrawMoney = async (req, res) => {
   const { amount } = req.body;
 
