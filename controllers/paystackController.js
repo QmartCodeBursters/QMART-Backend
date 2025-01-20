@@ -73,92 +73,37 @@ exports.initializePayment = async (req, res) => {
   
  
  // Verify payment
-exports.verifyPayment = async (req, res) => {
-    const { reference } = req.query;
-  
-    if (!reference) {
-      return res.status(400).json({ message: 'Reference is required' });
-    }
-  
+ exports.verifyPayment = async (reference) => {
     try {
-      // Make API call to Paystack to verify the payment
-      const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
-        headers: {
-          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-        },
-      });
-  
-      const transactionData = response.data.data;
-  
-      if (transactionData.status === 'success') {
-        // Find the transaction by reference
-        const transaction = await Transaction.findOne({ reference });
-  
-        if (!transaction) {
-          return res.status(404).json({ message: 'Transaction not found' });
+      const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`);
+      const contentType = response.headers.get('content-type');
+    
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        
+        if (data.success) {
+          console.log('Payment verified and merchant credited');
+          // Redirect to success page
+          setTimeout(() => {
+            window.location.href = "/transaction-status-success";
+          }, 1000); // Optional delay to ensure the user sees the result
+        } else {
+          console.log('Payment verification failed');
+          // Redirect to failure page
+          setTimeout(() => {
+            window.location.href = "/transaction-status-failure";
+          }, 1000);
         }
-  
-        // Ensure that the transaction has not been processed already
-        if (transaction.status === 'completed') {
-          return res.status(400).json({ message: 'Transaction has already been processed' });
-        }
-  
-        const amountInNaira = transactionData.amount / 100; // Convert from Kobo to Naira
-        const transactionFee = amountInNaira * 0.005; // 0.5% fee
-        const amountToMerchant = amountInNaira - transactionFee; // Amount to the merchant after deducting fee
-        const totalDeduction = amountInNaira + transactionFee; // Total amount deducted from the customer
-  
-        // Find the customer and merchant
-        const customer = await User.findOne({ email: transaction.customerEmail });
-        const merchant = await User.findById(transaction.merchantId);
-  
-        if (!customer || !merchant) {
-          return res.status(404).json({ message: 'Customer or Merchant not found' });
-        }
-  
-        // Ensure the customer has enough balance
-        if (customer.accountBalance < totalDeduction) {
-          return res.status(400).json({ message: 'Insufficient balance in customer account' });
-        }
-  
-        // Step 1: Deduct the total amount from the customer's balance
-        customer.accountBalance -= totalDeduction;
-        await customer.save();
-  
-        // Step 2: Add the amount to the merchant's balance
-        merchant.accountBalance += amountToMerchant;
-        await merchant.save();
-  
-        // Step 3: Update the transaction with the necessary details
-        transaction.status = 'completed'; // Mark as completed
-        transaction.transactionFee = transactionFee;
-        transaction.amount = amountInNaira;
-        transaction.totalDeduction = totalDeduction;
-        transaction.receiverId = merchant._id; // Set the merchant as receiver
-        transaction.senderId = customer._id; // Set the customer as sender
-        transaction.transactionId = transactionData.id; // Update with Paystack's transaction ID
-        await transaction.save();
-  
-        // Respond with success
-        res.status(200).json({
-          message: 'Payment verified and merchant credited',
-          success: true,
-        });
       } else {
-        res.status(400).json({
-          message: 'Payment verification failed',
-          success: false,
-        });
+        console.error('Received non-JSON response:', await response.text());
       }
     } catch (error) {
       console.error('Error verifying payment:', error);
-      res.status(500).json({
-        message: 'Server error',
-        error: error.message,
-        success: false,
-      });
+      // Optionally show an error page or message to the user
+      window.location.href = "/payment/failure";
     }
   };
+  
   
   
 exports.getMerchantTransactions = async (req, res) => {
