@@ -73,7 +73,7 @@ exports.initializePayment = async (req, res) => {
   
  
  // Verify payment
- exports.verifyPayment = async () => {
+ exports.verifyPayment = async (req, res) => {
         const {reference} = req.params;
     try {
       const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`);
